@@ -97,13 +97,19 @@ BlackJack/
 │   ├── dealer.py           # StandardDealer (стратегия дилера)
 │   ├── counter.py          # CardCounter (Hi-Lo)
 │   ├── probability.py      # ProbabilityEngine (Monte Carlo, EV)
-│   ├── trainer.py          # MathTrainer (генератор задач)
+│   ├── trainer.py          # MathTrainer (генератор задач, валидация ввода)
 │   ├── renderer.py         # TerminalRenderer (ANSI)
 │   ├── input_handler.py    # TerminalInput
 │   ├── stats.py            # Stats (статистика)
 │   ├── menu.py             # Меню, выбор сложности, справочник
 │   └── gui/
 │       ├── config.py       # Цвета, размеры, константы
-│       ├── sprites.py      # Отрисовка карт, кнопок, HUD
+│       ├── sprites.py      # Отрисовка карт, кнопок, HUD (кроссплатформенные шрифты)
 │       └── app.py          # Pygame-приложение (state machine)
+└── tests/
+    ├── test_models.py      # 29 тестов: Card, Rank, Suit, Hand, Shoe
+    ├── test_probability.py # 16 тестов: bust, EV, dealer bust, Monte Carlo
+    ├── test_trainer.py     # 22 теста: парсинг ввода, скоринг, генерация задач
+    ├── test_counter.py     # 8 тестов: Hi-Lo counting, true count
+    └── test_difficulty.py  # 5 тестов: пресеты сложности
 ```
