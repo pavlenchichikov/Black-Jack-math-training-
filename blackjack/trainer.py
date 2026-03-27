@@ -101,14 +101,19 @@ class MathTrainer:
     def check(self, challenge: Challenge, raw_answer: str) -> tuple[bool, str]:
         self.total_asked += 1
 
+        cleaned = raw_answer.strip()
+        if not cleaned:
+            self.streak = 0
+            return False, f"Пустой ввод. Правильный ответ: {self._fmt(challenge)}"
+
         try:
             if challenge.answer_type == "int":
-                answer = float(int(raw_answer.strip()))
+                answer = float(int(cleaned))
             elif challenge.answer_type == "choice":
-                answer = float(raw_answer.strip())
+                answer = float(cleaned)
             else:
-                answer = float(raw_answer.strip().replace(",", ".").replace("%", ""))
-        except ValueError:
+                answer = float(cleaned.replace(",", ".").rstrip("%").strip())
+        except (ValueError, OverflowError):
             self.streak = 0
             return False, f"Некорректный ввод. Правильный ответ: {self._fmt(challenge)}"
 

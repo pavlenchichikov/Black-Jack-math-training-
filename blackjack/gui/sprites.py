@@ -7,21 +7,32 @@ from ..models import Card, Rank, Suit
 from . import config as C
 
 
+def _sys_font(names: str, size: int, bold: bool = False) -> pygame.font.Font:
+    """Try system font with fallback chain, then Pygame default."""
+    font = pygame.font.SysFont(names, size, bold=bold)
+    # SysFont returns the default font when nothing matches — that's fine
+    return font
+
+
+_MONO = "consolas,inconsolata,dejavusansmono,liberationmono,couriernew,monospace"
+_SANS = "segoeui,arial,helvetica,dejavusans,liberationsans,freesans,sans"
+
+
 def init_fonts() -> dict[str, pygame.font.Font]:
-    """Call after pygame.init()."""
+    """Call after pygame.init(). Works on Windows, macOS, and Linux."""
     return {
-        "card":    pygame.font.SysFont("consolas", 18, bold=True),
-        "card_lg": pygame.font.SysFont("consolas", 28, bold=True),
-        "btn":     pygame.font.SysFont("segoeui", 20, bold=True),
-        "info":    pygame.font.SysFont("segoeui", 18),
-        "info_sm": pygame.font.SysFont("segoeui", 15),
-        "title":   pygame.font.SysFont("segoeui", 44, bold=True),
-        "sub":     pygame.font.SysFont("segoeui", 24),
-        "chip":    pygame.font.SysFont("consolas", 14, bold=True),
-        "hud":     pygame.font.SysFont("consolas", 16),
-        "popup":   pygame.font.SysFont("segoeui", 20),
-        "popup_q": pygame.font.SysFont("segoeui", 18),
-        "input":   pygame.font.SysFont("consolas", 22),
+        "card":    _sys_font(_MONO, 18, bold=True),
+        "card_lg": _sys_font(_MONO, 28, bold=True),
+        "btn":     _sys_font(_SANS, 20, bold=True),
+        "info":    _sys_font(_SANS, 18),
+        "info_sm": _sys_font(_SANS, 15),
+        "title":   _sys_font(_SANS, 44, bold=True),
+        "sub":     _sys_font(_SANS, 24),
+        "chip":    _sys_font(_MONO, 14, bold=True),
+        "hud":     _sys_font(_MONO, 16),
+        "popup":   _sys_font(_SANS, 20),
+        "popup_q": _sys_font(_SANS, 18),
+        "input":   _sys_font(_MONO, 22),
     }
 
 
