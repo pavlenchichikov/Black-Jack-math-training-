@@ -31,6 +31,7 @@ class Challenge:
     unit: str = ""
     answer_type: str = "float"   # "float" | "int" | "choice"
     choices: list[str] = field(default_factory=list)
+    topic: str = ""              # set by MathTrainer.generate()
 
     @property
     def points(self) -> int:
@@ -45,6 +46,7 @@ class MathTrainer:
         self,
         allowed_levels: tuple[int, ...] = (1, 2, 3),
         tolerance_mult: float = 1.0,
+        topic_priors: dict[str, tuple[int, int]] | None = None,
     ) -> None:
         self.score: int = 0
         self.streak: int = 0
@@ -53,8 +55,24 @@ class MathTrainer:
         self.total_correct: int = 0
         self._allowed_levels = allowed_levels
         self._tolerance_mult = tolerance_mult
+        # topic -> (asked, correct). Seeded from persisted profile so the
+        # weak-topic selector keeps working across sessions.
+        self.topic_stats: dict[str, list[int]] = {}
+        if topic_priors:
+            for name, (asked, correct) in topic_priors.items():
+                self.topic_stats[name] = [int(asked), int(correct)]
 
     # ── Public API ────────────────────────────────────────────────────────
+
+    def topic_accuracy(self, name: str) -> float:
+        ts = self.topic_stats.get(name)
+        if not ts or ts[0] == 0:
+            return 0.5  # unseen topics get a moderate prior
+        return ts[1] / ts[0]
+
+    def per_topic_session(self) -> dict[str, tuple[int, int]]:
+        """Returns this trainer's topic counters as (asked, correct) tuples."""
+        return {n: (s[0], s[1]) for n, s in self.topic_stats.items()}
 
     def generate(self, hand: Hand, dealer: Hand, shoe: Shoe,
                  counter: CardCounter) -> Challenge | None:
@@ -67,7 +85,6 @@ class MathTrainer:
             self._challenge_dealer_bust,
             self._challenge_cards_seen,
             self._challenge_conditional_bj,
-            # — NEW —
             self._challenge_draw_rank,
             self._challenge_complement,
             self._challenge_deck_composition,
@@ -85,21 +102,52 @@ class MathTrainer:
             self._challenge_bayes,
             self._challenge_poisson,
         ]
-        random.shuffle(generators)
+        # Weighted sampling: weaker topics (lower accuracy) get pulled
+        # more often. weight = 1 - accuracy + epsilon, so 100% topic
+        # still has some chance, 0% topic gets ~max weight.
+        weights = [
+            max(0.05, 1.0 - self.topic_accuracy(self._topic_name(g)))
+            for g in generators
+        ]
+        ordered = self._weighted_shuffle(generators, weights)
 
-        for gen in generators:
+        for gen in ordered:
             ch = gen(hand, dealer, shoe, counter)
-            if ch is not None:
-                # Filter by allowed difficulty levels
-                if ch.difficulty.value not in self._allowed_levels:
-                    continue
-                # Scale tolerance by difficulty multiplier
-                ch.tolerance *= self._tolerance_mult
-                return ch
+            if ch is None:
+                continue
+            if ch.difficulty.value not in self._allowed_levels:
+                continue
+            ch.tolerance *= self._tolerance_mult
+            ch.topic = self._topic_name(gen)
+            return ch
         return None
+
+    @staticmethod
+    def _topic_name(gen) -> str:
+        # Strip the leading "_challenge_" prefix used by every generator.
+        name = getattr(gen, "__name__", "unknown")
+        return name.removeprefix("_challenge_")
+
+    @staticmethod
+    def _weighted_shuffle(items, weights):
+        """Return `items` reordered so that higher-weighted elements
+        tend to come first. Implementation: assign each item a key
+        equal to -log(U) / weight (random.expovariate-style) and sort
+        ascending."""
+        keys = []
+        for w in weights:
+            u = random.random()
+            # Avoid log(0); clamp u away from zero.
+            if u < 1e-12:
+                u = 1e-12
+            keys.append(-math.log(u) / max(w, 1e-9))
+        return [items[i] for i in sorted(range(len(items)), key=lambda i: keys[i])]
 
     def check(self, challenge: Challenge, raw_answer: str) -> tuple[bool, str]:
         self.total_asked += 1
+        topic = challenge.topic or "unknown"
+        ts = self.topic_stats.setdefault(topic, [0, 0])
+        ts[0] += 1
 
         cleaned = raw_answer.strip()
         if not cleaned:
@@ -121,6 +169,7 @@ class MathTrainer:
 
         if is_correct:
             self.total_correct += 1
+            ts[1] += 1
             self.streak += 1
             self.max_streak = max(self.max_streak, self.streak)
             bonus = challenge.points * (1 + self.streak // 5)
@@ -284,7 +333,7 @@ class MathTrainer:
             explanation=(
                 f"Вышло карт: {counter.cards_seen}.\n"
                 f"  Осталось в колоде: {shoe.remaining}.\n"
-                f"  Умение считать вышедшие карты — база card counting."
+                f"  Умение считать вышедшие карты - база card counting."
             ),
             difficulty=Difficulty.EASY,
             answer_type="int",
@@ -331,7 +380,7 @@ class MathTrainer:
 
     def _challenge_draw_rank(self, hand: Hand, dealer: Hand,
                              shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """P(drawing specific rank) — Laplace formula P = m/n."""
+        """P(drawing specific rank) - Laplace formula P = m/n."""
         rank = random.choice([Rank.ACE, Rank.TWO, Rank.FIVE, Rank.SEVEN,
                               Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING])
         count = shoe.count_remaining(rank)
@@ -355,7 +404,7 @@ class MathTrainer:
 
     def _challenge_complement(self, hand: Hand, dealer: Hand,
                               shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """P(safe) = 1 − P(bust) — complement rule."""
+        """P(safe) = 1 - P(bust) - complement rule."""
         if hand.value < 12 or hand.value > 20:
             return None
         p_bust = ProbabilityEngine.bust_probability(hand, shoe) * 100
@@ -367,8 +416,8 @@ class MathTrainer:
             correct_answer=p_safe,
             tolerance=1.0,
             explanation=(
-                f"Правило дополнения: P(Ā) = 1 − P(A)\n"
-                f"  P(safe) = 100% − {p_bust:.1f}% = {p_safe:.1f}%"
+                f"Правило дополнения: P(Ā) = 1 - P(A)\n"
+                f"  P(safe) = 100% - {p_bust:.1f}% = {p_safe:.1f}%"
             ),
             difficulty=Difficulty.EASY,
             unit="%",
@@ -388,7 +437,7 @@ class MathTrainer:
             correct_answer=float(tens),
             tolerance=0.0,
             explanation=(
-                f"10-value: 10, J, Q, K — 4 ранга × {shoe.n_decks} колод = "
+                f"10-value: 10, J, Q, K - 4 ранга × {shoe.n_decks} колод = "
                 f"{total_initial} всего.\n"
                 f"  Вышло: {dealt}. Осталось: {tens}."
             ),
@@ -399,7 +448,7 @@ class MathTrainer:
 
     def _challenge_ratio_high_low(self, hand: Hand, dealer: Hand,
                                   shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """Ratio high/low cards — card counting insight."""
+        """Ratio high/low cards - card counting insight."""
         by_pts = shoe.remaining_by_points()
         high = by_pts.get(10, 0) + by_pts.get(11, 0)   # 10-value + aces
         low = sum(by_pts.get(p, 0) for p in range(2, 7))  # 2-6
@@ -410,13 +459,13 @@ class MathTrainer:
 
         return Challenge(
             question=(f"В колоде {high} «высоких» (10/J/Q/K/A) и {low} «низких» (2-6).\n"
-                      f"Какой % карт — высокие? (в %)"),
+                      f"Какой % карт - высокие? (в %)"),
             correct_answer=p_high,
             tolerance=3.0,
             explanation=(
                 f"P(high) = {high} / {total} = {p_high:.1f}%\n"
                 f"  Ratio high:low = {high}:{low} = {high / low:.2f}\n"
-                f"  Ratio > 1 → выгодно игроку (больше BJ и bust дилера)."
+                f"  Ratio > 1 -> выгодно игроку (больше BJ и bust дилера)."
             ),
             difficulty=Difficulty.EASY,
             unit="%",
@@ -441,14 +490,14 @@ class MathTrainer:
             explanation=(
                 f"TC = RC / remaining_decks = {rc} / {rd:.1f} = {tc:.1f}\n"
                 f"  TC > +2: преимущество игрока, увеличивай ставку.\n"
-                f"  TC < −2: преимущество казино, минимальная ставка."
+                f"  TC < -2: преимущество казино, минимальная ставка."
             ),
             difficulty=Difficulty.MEDIUM,
         )
 
     def _challenge_addition_rule(self, hand: Hand, dealer: Hand,
                                  shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """P(A∪B) = P(A) + P(B) − P(A∩B)."""
+        """P(A∪B) = P(A) + P(B) - P(A∩B)."""
         remaining = shoe.cards_snapshot
         total = len(remaining)
         if total < 20:
@@ -469,9 +518,9 @@ class MathTrainer:
             correct_answer=p,
             tolerance=3.0,
             explanation=(
-                f"Формула сложения: P(A∪B) = P(A) + P(B) − P(A∩B)\n"
-                f"  = {reds}/{total} + {faces}/{total} − {red_faces}/{total}\n"
-                f"  = ({reds} + {faces} − {red_faces}) / {total} = {p:.1f}%"
+                f"Формула сложения: P(A∪B) = P(A) + P(B) - P(A∩B)\n"
+                f"  = {reds}/{total} + {faces}/{total} - {red_faces}/{total}\n"
+                f"  = ({reds} + {faces} - {red_faces}) / {total} = {p:.1f}%"
             ),
             difficulty=Difficulty.MEDIUM,
             unit="%",
@@ -479,7 +528,7 @@ class MathTrainer:
 
     def _challenge_bj_combos(self, hand: Hand, dealer: Hand,
                              shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """Counting BJ combinations — multiplication rule."""
+        """Counting BJ combinations - multiplication rule."""
         aces = shoe.count_remaining(Rank.ACE)
         tens = sum(shoe.count_remaining(r)
                    for r in (Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING))
@@ -502,7 +551,7 @@ class MathTrainer:
 
     def _challenge_mean_card_value(self, hand: Hand, dealer: Hand,
                                    shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """E(X) — expected value of next card."""
+        """E(X) - expected value of next card."""
         by_pts = shoe.remaining_by_points()
         total = shoe.remaining
         if total == 0:
@@ -517,7 +566,7 @@ class MathTrainer:
             explanation=(
                 f"E(X) = Σ xᵢ × P(xᵢ) = Σ (pts × count) / total\n"
                 f"  = {sum(pts * cnt for pts, cnt in by_pts.items())} / {total} = {mean:.2f}\n"
-                f"  E(X) > 7 → в колоде больше крупных карт."
+                f"  E(X) > 7 -> в колоде больше крупных карт."
             ),
             difficulty=Difficulty.MEDIUM,
         )
@@ -543,14 +592,14 @@ class MathTrainer:
             explanation=(
                 f"Ожидаемый выигрыш = EV × Bet = {best_ev:+.2f} × ${bet} "
                 f"= ${expected:+.1f}\n"
-                f"  EV > 0 → в среднем профит. EV < 0 → в среднем убыток."
+                f"  EV > 0 -> в среднем профит. EV < 0 -> в среднем убыток."
             ),
             difficulty=Difficulty.MEDIUM,
         )
 
     def _challenge_kelly(self, hand: Hand, dealer: Hand,
                          shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """Kelly criterion: f* = (bp − q) / b."""
+        """Kelly criterion: f* = (bp - q) / b."""
         if hand.value < 8 or hand.value > 20:
             return None
 
@@ -570,10 +619,10 @@ class MathTrainer:
             correct_answer=round(kelly, 1),
             tolerance=5.0,
             explanation=(
-                f"f* = (b×p − q) / b = (1×{p_win:.2f} − {p_lose:.2f}) / 1 "
+                f"f* = (b×p - q) / b = (1×{p_win:.2f} - {p_lose:.2f}) / 1 "
                 f"= {kelly:+.1f}%\n"
-                f"  f* < 0 → не ставить (edge у казино).\n"
-                f"  f* > 0 → ставить f*% банка для максимального роста."
+                f"  f* < 0 -> не ставить (edge у казино).\n"
+                f"  f* > 0 -> ставить f*% банка для максимального роста."
             ),
             difficulty=Difficulty.HARD,
             unit="%",
@@ -606,7 +655,7 @@ class MathTrainer:
 
     def _challenge_at_least_one_ace(self, hand: Hand, dealer: Hand,
                                     shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """P(≥1 ace in 3 draws) = 1 − P(no aces in 3 draws)."""
+        """P(≥1 ace in 3 draws) = 1 - P(no aces in 3 draws)."""
         aces = shoe.count_remaining(Rank.ACE)
         total = shoe.remaining
         if total < 3 or aces == 0:
@@ -623,10 +672,10 @@ class MathTrainer:
             tolerance=3.0,
             explanation=(
                 f"Дополнение + умножение зависимых:\n"
-                f"  P(≥1) = 1 − P(0 тузов за 3 карты)\n"
+                f"  P(≥1) = 1 - P(0 тузов за 3 карты)\n"
                 f"  P(0) = {n_a}/{total} × {n_a - 1}/{total - 1} × "
                 f"{n_a - 2}/{total - 2} = {p_no:.4f}\n"
-                f"  P(≥1) = 1 − {p_no:.4f} = {p:.1f}%"
+                f"  P(≥1) = 1 - {p_no:.4f} = {p:.1f}%"
             ),
             difficulty=Difficulty.HARD,
             unit="%",
@@ -634,7 +683,7 @@ class MathTrainer:
 
     def _challenge_std_dev(self, hand: Hand, dealer: Hand,
                            shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """σ = √D(X) — standard deviation from variance."""
+        """σ = √D(X) - standard deviation from variance."""
         by_pts = shoe.remaining_by_points()
         total = shoe.remaining
         if total == 0:
@@ -658,7 +707,7 @@ class MathTrainer:
 
     def _challenge_bernoulli(self, hand: Hand, dealer: Hand,
                              shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """Bernoulli trials: P(X=k) = C(n,k) × p^k × (1−p)^(n−k)."""
+        """Bernoulli trials: P(X=k) = C(n,k) × p^k × (1-p)^(n-k)."""
         if hand.value < 12 or hand.value > 19:
             return None
 
@@ -678,7 +727,7 @@ class MathTrainer:
             correct_answer=prob,
             tolerance=3.0,
             explanation=(
-                f"Формула Бернулли: P(X=k) = C(n,k) × p^k × q^(n−k)\n"
+                f"Формула Бернулли: P(X=k) = C(n,k) × p^k × q^(n-k)\n"
                 f"  C({n},{k}) = {c_nk},  p = {p:.3f},  q = {q:.3f}\n"
                 f"  P = {c_nk} × {p:.3f}^{k} × {q:.3f}^{nk} = {prob:.2f}%"
             ),
@@ -727,7 +776,7 @@ class MathTrainer:
 
     def _challenge_poisson(self, hand: Hand, dealer: Hand,
                            shoe: Shoe, counter: CardCounter) -> Challenge | None:
-        """Poisson distribution: P(X=k) = (λ^k × e^(−λ)) / k!"""
+        """Poisson distribution: P(X=k) = (λ^k × e^(-λ)) / k!"""
         total = shoe.remaining
         if total < 20:
             return None
@@ -756,9 +805,9 @@ class MathTrainer:
             correct_answer=prob,
             tolerance=3.0,
             explanation=(
-                f"Формула Пуассона: P(X=k) = (λ^k × e^(−λ)) / k!\n"
+                f"Формула Пуассона: P(X=k) = (λ^k × e^(-λ)) / k!\n"
                 f"  λ = {lam:.2f}, k = {k}\n"
-                f"  P = ({lam:.2f}^{k} × e^(−{lam:.2f})) / {k}!\n"
+                f"  P = ({lam:.2f}^{k} × e^(-{lam:.2f})) / {k}!\n"
                 f"  = {lam_k:.4f} × {e_neg:.4f} / {k_fact} = {prob:.2f}%"
             ),
             difficulty=Difficulty.HARD,

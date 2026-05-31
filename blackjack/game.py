@@ -167,7 +167,7 @@ class BlackjackGame:
                 self.balance += bet
                 self.stats.record(RoundOutcome.PUSH)
                 self.renderer.show_message(
-                    f"{Ansi.YELLOW}Push — оба Blackjack{Ansi.RST}"
+                    f"{Ansi.YELLOW}Push - оба Blackjack{Ansi.RST}"
                 )
             else:
                 self.stats.record(RoundOutcome.LOSE)
@@ -298,14 +298,17 @@ class BlackjackGame:
     # ── Dealer turn ───────────────────────────────────────────────────────
 
     def _dealer_turn(self, dealer: Hand, player_hands: list[Hand]) -> None:
+        delay = self.renderer.animation_delay
         self._refresh(dealer, player_hands, hide_dealer=False,
                       message=f"{Ansi.DIM}Дилер открывает карты...{Ansi.RST}")
-        time.sleep(0.8)
+        if delay > 0:
+            time.sleep(delay)
         while self.dealer_strategy.should_hit(dealer):
             dealer.add(self._draw())
             self._refresh(dealer, player_hands, hide_dealer=False,
                           message=f"{Ansi.DIM}Дилер берёт карту...{Ansi.RST}")
-            time.sleep(0.8)
+            if delay > 0:
+                time.sleep(delay)
 
     # ── Settlement ────────────────────────────────────────────────────────
 

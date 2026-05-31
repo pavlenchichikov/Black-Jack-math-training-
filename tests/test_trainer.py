@@ -131,7 +131,7 @@ class TestScoring:
         ch = Challenge("q", 10.0, 1.0, "e", Difficulty.MEDIUM)  # 25 points
         for _ in range(6):
             trainer.check(ch, "10")
-        # 5 answers: streak 1-4 → bonus=1, streak 5 → bonus=2
+        # 5 answers: streak 1-4 -> bonus=1, streak 5 -> bonus=2
         # Points: 25*1 + 25*1 + 25*1 + 25*1 + 25*2 + 25*2 = 200
         assert trainer.score > 0
         assert trainer.max_streak == 6
@@ -141,7 +141,7 @@ class TestScoring:
 
 class TestChallengeGeneration:
     def test_generate_returns_challenge(self, trainer, shoe, counter):
-        hand = _hand(Rank.TEN, Rank.SIX)  # 16 — many generators work
+        hand = _hand(Rank.TEN, Rank.SIX)  # 16 - many generators work
         dealer = _hand(Rank.TWO, Rank.KING)
         # Draw some cards to populate counter
         for _ in range(10):
@@ -170,7 +170,7 @@ class TestChallengeGeneration:
             c = shoe.draw()
             counter.update(c)
         ch = trainer.generate(hand, dealer, shoe, counter)
-        # tolerance_mult=2.0 means tolerance is doubled — hard to test exact value
+        # tolerance_mult=2.0 means tolerance is doubled - hard to test exact value
         # but at least verify the challenge is generated
         assert ch is None or isinstance(ch, Challenge)
 

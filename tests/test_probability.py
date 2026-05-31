@@ -45,7 +45,7 @@ class TestBustProbability:
 
     def test_bust_prob_in_range(self):
         shoe = Shoe(n_decks=6)
-        hand = _hand(Rank.TEN, Rank.SIX)  # 16 — risky
+        hand = _hand(Rank.TEN, Rank.SIX)  # 16 - risky
         p = PE.bust_probability(hand, shoe)
         assert 0.0 < p < 1.0
 

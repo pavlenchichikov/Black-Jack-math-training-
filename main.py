@@ -1,4 +1,4 @@
-"""BLACKJACK 21 — Entry point (Terminal + GUI)."""
+"""BLACKJACK 21 - Entry point (Terminal + GUI)."""
 
 import os
 import sys

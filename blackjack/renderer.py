@@ -25,16 +25,25 @@ class Ansi:
 
 class TerminalRenderer:
     CARD_HEIGHT = 7
+    DEFAULT_ANIMATION_DELAY = 0.8
 
     def __init__(self, edu_mode: bool = False,
                  show_prob_hud: bool = True,
-                 show_optimal_hint: bool = False) -> None:
+                 show_optimal_hint: bool = False,
+                 animation_delay: float | None = None) -> None:
         self.edu_mode = edu_mode
         self.show_prob_hud = show_prob_hud
         self.show_optimal_hint = show_optimal_hint
+        # Pass 0 from tests/backtests to skip dealer-turn pauses.
+        self.animation_delay = (
+            self.DEFAULT_ANIMATION_DELAY if animation_delay is None
+            else animation_delay
+        )
 
     def clear(self) -> None:
-        os.system("cls" if sys.platform == "win32" else "clear")
+        # ANSI clear works on every modern terminal and doesn't spawn a shell.
+        sys.stdout.write("\033[2J\033[H")
+        sys.stdout.flush()
 
     def show_message(self, msg: str) -> None:
         print(f"\n  {msg}")

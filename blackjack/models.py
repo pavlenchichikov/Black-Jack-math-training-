@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
@@ -68,14 +69,24 @@ class Card:
 # ── Shoe ──────────────────────────────────────────────────────────────────────
 
 class Shoe:
-    """Multi-deck shoe with dealt-card tracking."""
+    """Multi-deck shoe with dealt-card tracking and optional seeded RNG.
 
-    def __init__(self, n_decks: int = 6, reshuffle_at: int = 52):
+    Pass `rng=random.Random(seed)` for deterministic shuffles in tests
+    and replay; the default uses the module-global random source.
+    """
+
+    def __init__(
+        self,
+        n_decks: int = 6,
+        reshuffle_at: int = 52,
+        rng: random.Random | None = None,
+    ):
         self._n_decks = n_decks
         self._reshuffle_at = reshuffle_at
         self._cards: list[Card] = []
         self._dealt: list[Card] = []
-        self._on_reshuffle: list[callable] = []
+        self._on_reshuffle: list[Callable[[], None]] = []
+        self._rng = rng if rng is not None else random
         self.shuffle()
 
     def shuffle(self) -> None:
@@ -85,7 +96,7 @@ class Shoe:
             for suit in Suit
             for rank in Rank
         ]
-        random.shuffle(self._cards)
+        self._rng.shuffle(self._cards)
         self._dealt.clear()
 
     def draw(self) -> Card:
@@ -97,7 +108,7 @@ class Shoe:
         self._dealt.append(card)
         return card
 
-    def on_reshuffle(self, callback: callable) -> None:
+    def on_reshuffle(self, callback: Callable[[], None]) -> None:
         self._on_reshuffle.append(callback)
 
     @property

@@ -10,7 +10,7 @@ from . import config as C
 def _sys_font(names: str, size: int, bold: bool = False) -> pygame.font.Font:
     """Try system font with fallback chain, then Pygame default."""
     font = pygame.font.SysFont(names, size, bold=bold)
-    # SysFont returns the default font when nothing matches — that's fine
+    # SysFont returns the default font when nothing matches - that's fine
     return font
 
 

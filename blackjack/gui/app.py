@@ -385,7 +385,7 @@ class App:
 
     def _deal_next(self) -> None:
         if not self.deal_queue:
-            # All dealt — check naturals
+            # All dealt - check naturals
             self._after_deal()
             return
 
@@ -421,7 +421,7 @@ class App:
         if ph.is_blackjack and dh.is_blackjack:
             self.balance += self.current_bet
             self.stats.record(RoundOutcome.PUSH)
-            self._show_result("PUSH — оба Blackjack", C.GOLD)
+            self._show_result("PUSH - оба Blackjack", C.GOLD)
             return
         if ph.is_blackjack:
             win = int(self.current_bet + self.current_bet * self.cfg.blackjack_payout)
