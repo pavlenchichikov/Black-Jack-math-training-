@@ -1,8 +1,8 @@
 """Tests for domain models: Card, Rank, Suit, Hand, Shoe."""
 
 import pytest
-from blackjack.models import Card, Hand, HandState, Rank, Shoe, Suit
 
+from blackjack.models import Card, Hand, HandState, Rank, Shoe, Suit
 
 # ── Rank ─────────────────────────────────────────────────────────────────
 

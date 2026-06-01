@@ -1,8 +1,6 @@
 """Tests for the JSON profile persistence layer."""
 from __future__ import annotations
 
-import json
-
 from blackjack.persistence import Profile, load_profile, save_profile
 
 

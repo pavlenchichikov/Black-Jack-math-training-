@@ -7,7 +7,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
-
 # ── Suit ──────────────────────────────────────────────────────────────────────
 
 class Suit(Enum):

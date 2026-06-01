@@ -49,4 +49,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+# E701/E702: enum classes use semicolons for one-line member lists by
+#            design (Suit, Rank, Action, RoundOutcome, HandState, Ansi).
+# E501:      long lines tolerated for ASCII card art and ANSI strings.
+ignore = ["E501", "E701", "E702"]

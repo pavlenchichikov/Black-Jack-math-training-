@@ -1,8 +1,6 @@
 """Tests for probability engine."""
 
-import pytest
 from blackjack.models import Card, Hand, Rank, Shoe, Suit
-
 
 # Import after models so we can construct test objects
 from blackjack.probability import ProbabilityEngine as PE

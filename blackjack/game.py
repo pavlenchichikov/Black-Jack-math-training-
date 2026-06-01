@@ -8,7 +8,7 @@ import time
 from .actions import Action, RoundOutcome
 from .counter import CardCounter
 from .dealer import StandardDealer
-from .difficulty import DifficultyConfig, DifficultyLevel, DIFFICULTY_PRESETS
+from .difficulty import DIFFICULTY_PRESETS, DifficultyConfig, DifficultyLevel
 from .input_handler import TerminalInput
 from .models import Card, Hand, HandState, Rank, Shoe
 from .renderer import Ansi, TerminalRenderer
@@ -104,9 +104,9 @@ class BlackjackGame:
         self._refresh(dealer, player_hands, hide_dealer=True)
 
         # Insurance
-        if dealer.cards[1].rank is Rank.ACE:
-            if self._handle_insurance(dealer, player_hands, bet):
-                return True
+        if (dealer.cards[1].rank is Rank.ACE
+                and self._handle_insurance(dealer, player_hands, bet)):
+            return True
 
         # Naturals
         if self._handle_naturals(dealer, player_hands, bet):
@@ -399,7 +399,7 @@ class BlackjackGame:
   {Ansi.DIM}* Probability HUD: {hud}
   * Частота задач: {c.challenge_chance:.0%}
   * Точность ответов: x{c.tolerance_mult:.1f}
-  * Задачи: {', '.join({1:'Easy',2:'Medium',3:'Hard'}[l] for l in c.allowed_challenge_levels)}
+  * Задачи: {', '.join({1:'Easy',2:'Medium',3:'Hard'}[lvl] for lvl in c.allowed_challenge_levels)}
   * Типы задач:
     - P(bust) при Hit (формула Лапласа)
     - Сколько карт до 21 (комбинаторика)

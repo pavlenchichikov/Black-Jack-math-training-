@@ -1,7 +1,7 @@
 """Tests for Hi-Lo card counter."""
 
-from blackjack.models import Card, Rank, Suit
 from blackjack.counter import CardCounter
+from blackjack.models import Card, Rank, Suit
 
 
 def _card(rank, suit=Suit.HEARTS):

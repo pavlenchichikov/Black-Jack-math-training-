@@ -2,26 +2,22 @@
 
 from __future__ import annotations
 
-import math
-import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, auto
 
 import pygame
 
-from ..models import Card, Hand, HandState, Rank, Shoe
 from ..actions import Action, RoundOutcome
 from ..counter import CardCounter
 from ..dealer import StandardDealer
-from ..difficulty import DifficultyConfig, DifficultyLevel, DIFFICULTY_PRESETS
+from ..difficulty import DIFFICULTY_PRESETS, DifficultyConfig, DifficultyLevel
+from ..models import Card, Hand, HandState, Shoe
 from ..probability import ProbabilityEngine
 from ..stats import Stats as GameStats
-from ..trainer import MathTrainer, Challenge
-
+from ..trainer import Challenge, MathTrainer
 from . import config as C
 from . import sprites as S
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  GAME STATE
@@ -353,12 +349,10 @@ class App:
                 self._go_to_menu()
 
     def _event_gameover(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.btn_new_game.clicked(event.pos):
-                self.state = State.MENU
-        elif event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                self.state = State.MENU
+        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
+                and self.btn_new_game.clicked(event.pos)) or (event.type == pygame.KEYDOWN
+                and event.key in (pygame.K_RETURN, pygame.K_SPACE)):
+            self.state = State.MENU
 
     # ── Game logic ────────────────────────────────────────────────────────
 
@@ -585,9 +579,9 @@ class App:
                 anim.done = True
 
         # In dealing state, queue next card after current animation
-        if self.state == State.DEALING:
-            if all(a.done for a in self.anims):
-                self._deal_next()
+        if (self.state == State.DEALING
+                and all(a.done for a in self.anims)):
+            self._deal_next()
 
         # Dealer turn timer
         if self.state == State.DEALER:

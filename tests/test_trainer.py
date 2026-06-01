@@ -1,8 +1,9 @@
 """Tests for MathTrainer: input parsing, challenge generation, scoring."""
 
 import pytest
-from blackjack.models import Card, Hand, Rank, Shoe, Suit
+
 from blackjack.counter import CardCounter
+from blackjack.models import Card, Hand, Rank, Shoe, Suit
 from blackjack.trainer import Challenge, Difficulty, MathTrainer
 
 

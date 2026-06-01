@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 
-from .difficulty import DifficultyLevel, DIFFICULTY_PRESETS
+from .difficulty import DIFFICULTY_PRESETS, DifficultyLevel
 from .renderer import Ansi
 
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from typing import TYPE_CHECKING
 
@@ -129,9 +128,9 @@ class TerminalRenderer:
         return [
             "\u250c\u2500\u2500\u2500\u2500\u2500\u2510",
             f"\u2502{clr}{r}{Ansi.RST}   \u2502",
-            f"\u2502     \u2502",
+            "\u2502     \u2502",
             f"\u2502  {clr}{s}{Ansi.RST}  \u2502",
-            f"\u2502     \u2502",
+            "\u2502     \u2502",
             f"\u2502   {clr}{r2}{Ansi.RST}\u2502",
             "\u2514\u2500\u2500\u2500\u2500\u2500\u2518",
         ]

@@ -21,7 +21,6 @@ from __future__ import annotations
 from .actions import Action
 from .models import Card, Hand, Rank
 
-
 # Dealer upcard buckets used as columns. Index 0..9 = upcard 2..10, 10 = Ace.
 _UPCARD_COLS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 

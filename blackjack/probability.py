@@ -15,10 +15,9 @@ a 6-deck shoe.
 from __future__ import annotations
 
 import random
-from functools import lru_cache
+from functools import cache, lru_cache
 
 from .models import Card, Hand, Rank, Shoe
-
 
 # ── Public helpers ────────────────────────────────────────────────────────────
 
@@ -282,7 +281,7 @@ def _dealer_bust_dp(
         return 0.0
     probs = {pts: cnt / total for pts, cnt in by_pts.items()}
 
-    @lru_cache(maxsize=None)
+    @cache
     def bust_from(val: int, aces: int) -> float:
         if val > 21:
             return 1.0
@@ -300,9 +299,7 @@ def _dealer_bust_dp(
 def _dealer_keeps_hitting(val: int, aces: int, hit_soft_17: bool) -> bool:
     if val < 17:
         return True
-    if val == 17 and aces > 0 and hit_soft_17:
-        return True
-    return False
+    return val == 17 and aces > 0 and hit_soft_17
 
 
 def _quick_ev_stand(player_val: int, dealer_upcard: Card,

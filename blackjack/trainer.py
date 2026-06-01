@@ -5,13 +5,12 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum
 
-from .models import Hand, Rank, Shoe
 from .counter import CardCounter
+from .models import Hand, Rank, Shoe
 from .probability import ProbabilityEngine
 from .renderer import Ansi
-
 
 # ── Difficulty & Challenge ────────────────────────────────────────────────────
 
@@ -559,8 +558,8 @@ class MathTrainer:
         mean = sum(pts * cnt for pts, cnt in by_pts.items()) / total
 
         return Challenge(
-            question=(f"Какова средняя стоимость карты в колоде?\n"
-                      f"(мат. ожидание E(X), округли до 0.1)"),
+            question=("Какова средняя стоимость карты в колоде?\n"
+                      "(мат. ожидание E(X), округли до 0.1)"),
             correct_answer=round(mean, 1),
             tolerance=0.5,
             explanation=(

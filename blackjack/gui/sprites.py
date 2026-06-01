@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import pygame
-from ..models import Card, Rank, Suit
+
+from ..models import Card, Suit
 from . import config as C
 
 
@@ -231,13 +232,13 @@ def draw_hud_panel(surf: pygame.Surface, fonts: dict,
         y += 24
         ev_clr = C.GREEN_BTN if ev_hit > ev_stand else C.RED_BTN
         es_clr = C.GREEN_BTN if ev_stand >= ev_hit else C.RED_BTN
-        txt = fonts["hud"].render(f"EV(Hit): ", True, C.GRAY_LIGHT)
+        txt = fonts["hud"].render("EV(Hit): ", True, C.GRAY_LIGHT)
         surf.blit(txt, (x, y))
         w = txt.get_width()
         txt = fonts["hud"].render(f"{ev_hit:+.3f}", True, ev_clr)
         surf.blit(txt, (x + w, y))
         w2 = w + txt.get_width() + 40
-        txt = fonts["hud"].render(f"EV(Stand): ", True, C.GRAY_LIGHT)
+        txt = fonts["hud"].render("EV(Stand): ", True, C.GRAY_LIGHT)
         surf.blit(txt, (x + w2, y))
         w3 = w2 + txt.get_width()
         txt = fonts["hud"].render(f"{ev_stand:+.3f}", True, es_clr)

@@ -14,6 +14,4 @@ class StandardDealer:
     def should_hit(self, hand: Hand) -> bool:
         if hand.value < 17:
             return True
-        if hand.value == 17 and hand.is_soft and self._hit_soft_17:
-            return True
-        return False
+        return hand.value == 17 and hand.is_soft and self._hit_soft_17

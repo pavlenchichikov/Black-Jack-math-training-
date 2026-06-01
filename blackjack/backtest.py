@@ -67,10 +67,7 @@ def simulate(
         tc = counter.true_count(shoe.remaining_decks) if use_counting else 0.0
 
         # Bet sizing
-        if use_counting:
-            bet = recommend_bet(tc, min_bet)
-        else:
-            bet = min_bet
+        bet = recommend_bet(tc, min_bet) if use_counting else min_bet
         if bet > balance:
             bet = (balance // min_bet) * min_bet
         if bet < min_bet:
@@ -88,15 +85,16 @@ def simulate(
 
         # Insurance side bet (only if dealer shows Ace and counting on)
         insurance_paid = 0
-        if use_counting and dealer.cards[1].rank is Rank.ACE:
-            if should_take_insurance(tc):
-                ins = bet // 2
-                if ins <= balance:
-                    balance -= ins
-                    if dealer.is_blackjack:
-                        balance += ins * 3
-                    else:
-                        insurance_paid = -ins
+        if (use_counting
+                and dealer.cards[1].rank is Rank.ACE
+                and should_take_insurance(tc)):
+            ins = bet // 2
+            if ins <= balance:
+                balance -= ins
+                if dealer.is_blackjack:
+                    balance += ins * 3
+                else:
+                    insurance_paid = -ins
 
         # Naturals
         if dealer.is_blackjack and player.is_blackjack:

@@ -16,10 +16,9 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
 
 PROFILE_DIR = Path.home() / ".blackjack_edu"
 PROFILE_PATH = PROFILE_DIR / "profile.json"
@@ -94,7 +93,7 @@ class Profile:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Profile":
+    def from_dict(cls, data: dict[str, Any]) -> Profile:
         p = cls(
             rounds=int(data.get("rounds", 0)),
             wins=int(data.get("wins", 0)),
@@ -149,7 +148,7 @@ class Profile:
             ts.correct += correct
 
         self.session_log.append({
-            "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "date": datetime.now(UTC).isoformat(timespec="seconds"),
             "rounds": rounds,
             "profit_delta": profit_delta,
             "trainer_accuracy": (
